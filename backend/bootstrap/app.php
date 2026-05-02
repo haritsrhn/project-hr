@@ -14,6 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Sanctum stateful middleware for SPA authentication
         $middleware->statefulApi();
+
+        // Named middleware aliases — referenced in routes/api.php
+        $middleware->alias([
+            'role'         => \App\Http\Middleware\CheckRole::class,
+            'permission'   => \App\Http\Middleware\CheckPermission::class,
+            'entity.scope' => \App\Http\Middleware\EntityScope::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

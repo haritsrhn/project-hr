@@ -101,9 +101,15 @@ class User extends Authenticatable
     /**
      * Check whether this user has a permission (by slug) via any of their roles.
      * Optional entity scope narrows the roles checked.
+     * super_admin bypasses all permission checks.
      */
     public function hasPermission(string $slug, ?string $entityId = null): bool
     {
+        // super_admin has all permissions — no DB lookup needed
+        if ($this->hasRole('super_admin')) {
+            return true;
+        }
+
         $roleIds = $this->roles()
             ->when($entityId, fn ($q) => $q->wherePivot('entity_id', $entityId))
             ->pluck('roles.id');
