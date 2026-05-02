@@ -1,23 +1,29 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Resources;
 
-use App\Http\Resources\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
-abstract class Controller
+/**
+ * Trait ApiResponse
+ *
+ * Provides standardised JSON response helpers for all controllers.
+ *
+ * Every response envelope:
+ *   {
+ *     "data":    <mixed>   // payload (null for errors)
+ *     "message": <string>  // human-readable description
+ *     "status":  <int>     // mirrors the HTTP status code
+ *   }
+ */
+trait ApiResponse
 {
-    use ApiResponse;
-
     /**
      * Return a successful JSON response.
      *
-     * Delegates to the ApiResponse trait; re-declared here so IDE tooling
-     * surfaces the return type on every concrete controller class.
-     *
      * @param  mixed   $data
      * @param  string  $message
-     * @param  int     $status
+     * @param  int     $status  HTTP status code (2xx)
      */
     protected function success(
         mixed $data = null,
@@ -35,8 +41,8 @@ abstract class Controller
      * Return an error JSON response.
      *
      * @param  string  $message
-     * @param  int     $status
-     * @param  array   $errors
+     * @param  int     $status   HTTP status code (4xx / 5xx)
+     * @param  array   $errors   Optional field-level validation errors
      */
     protected function error(
         string $message,
