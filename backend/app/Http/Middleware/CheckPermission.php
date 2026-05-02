@@ -21,6 +21,11 @@ class CheckPermission
     {
         $user = $request->user();
 
+        // Defensive guard — auth:sanctum should have handled this, but protect against misconfiguration
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.', 'status' => Response::HTTP_UNAUTHORIZED], Response::HTTP_UNAUTHORIZED);
+        }
+
         // Narrow permission check to the active entity when available
         $entityId = $request->attributes->get('active_entity_id');
 

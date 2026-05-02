@@ -21,6 +21,11 @@ class CheckRole
     {
         $user = $request->user();
 
+        // Defensive guard — auth:sanctum should have handled this, but protect against misconfiguration
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.', 'status' => Response::HTTP_UNAUTHORIZED], Response::HTTP_UNAUTHORIZED);
+        }
+
         foreach ($roles as $role) {
             if ($user->hasRole($role)) {
                 return $next($request);

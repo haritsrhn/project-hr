@@ -93,6 +93,7 @@ Route::middleware(['auth:sanctum'])
         Route::post('/clock-in', [AttendanceController::class, 'clockIn'])
             ->middleware('permission:attendance.clock_in');
 
+        // clock-out intentionally uses the same permission as clock-in (one permission covers both directions)
         Route::post('/clock-out', [AttendanceController::class, 'clockOut'])
             ->middleware('permission:attendance.clock_in');
 
