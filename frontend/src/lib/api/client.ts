@@ -1,5 +1,23 @@
 import axios from 'axios'
 
+// Convert snake_case keys to camelCase recursively
+function toCamel(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+}
+
+function camelizeKeys(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(camelizeKeys)
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [
+        toCamel(k),
+        camelizeKeys(v),
+      ])
+    )
+  }
+  return obj
+}
+
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api',
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -7,15 +25,20 @@ const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('auth_token')
+    if (token) config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    response.data = camelizeKeys(response.data)
+    return response
+  },
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('auth_token')
       window.location.href = '/login'
     }

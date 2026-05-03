@@ -138,20 +138,43 @@ export interface PayrollRun {
   totalEmployees: number
 }
 
+// Minimal employee snapshot returned inside PayrollItem
+export interface PayrollEmployee {
+  id: string
+  employeeNumber: string
+  position: string
+  department: string
+  user: { id: string; name: string; email: string } | null
+}
+
 export interface PayrollItem {
   id: string
   payrollRunId: string
   employmentId: string
-  employment: Employment
+  employee: PayrollEmployee | null
   grossSalary: number
-  bpjsKesehatan: number
-  bpjsTkJht: number
-  bpjsTkJkk: number
-  bpjsTkJkm: number
-  pph21Amount: number
-  deductions: SalaryComponent[]
-  allowances: SalaryComponent[]
   netSalary: number
+  allowances: SalaryComponent[]
+  deductions: SalaryComponent[]
+  // BPJS Kesehatan (employee share)
+  bpjsKesEmployee: number
+  bpjsKesEmployer: number
+  // BPJS TK
+  bpjsJhtEmployee: number
+  bpjsJhtEmployer: number
+  bpjsJkk: number
+  bpjsJkm: number
+  bpjsJpEmployee: number
+  bpjsJpEmployer: number
+  // PPh 21
+  pph21AnnualBase: number
+  pph21Amount: number
+  pph21Breakdown: Array<{ bracket: string; taxable: number; rate: number; tax: number }>
+  // Attendance
+  workingDays: number
+  presentDays: number
+  absentDays: number
+  leaveDays: number
   slipUrl: string | null
 }
 
