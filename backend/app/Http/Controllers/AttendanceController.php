@@ -88,7 +88,9 @@ class AttendanceController extends Controller
         }
 
         // 3a. Block MANUAL method for non-admin roles
-        if ($request->method === 'MANUAL' && ! $user->hasAnyRole(['super_admin', 'entity_admin', 'hrd'])) {
+        if ($request->method === 'MANUAL' && ! (
+            $user->hasRole('super_admin') || $user->hasRole('entity_admin') || $user->hasRole('manager')
+        )) {
             return $this->error('Metode MANUAL hanya dapat digunakan oleh admin.', 403);
         }
 
@@ -274,7 +276,6 @@ class AttendanceController extends Controller
         // Determine if user has elevated visibility
         $isElevated = $user->hasRole('super_admin')
             || $user->hasRole('entity_admin')
-            || $user->hasRole('hrd')
             || $user->hasRole('manager');
 
         $query = Attendance::with(['employment.user', 'location']);

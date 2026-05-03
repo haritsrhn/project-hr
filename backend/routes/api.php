@@ -105,7 +105,7 @@ Route::middleware(['auth:sanctum'])
             ->middleware('permission:attendance.view_own');
 
         Route::put('/{attendance}/correct', [AttendanceController::class, 'correct'])
-            ->middleware('permission:attendance.correct');
+            ->middleware(['entity.scope', 'permission:attendance.correct']);
     });
 
 // ── LEAVE ─────────────────────────────────────────────────────────────────

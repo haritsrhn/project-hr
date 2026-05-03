@@ -87,9 +87,15 @@ class EmployeeController extends Controller
     {
         $validated = $request->validated();
 
-        // Resolve entity_id: prefer request body, fall back to active entity scope
+        // Force entity_id to the active entity scope for non-super_admin — don't trust the request body
+        $activeEntityId = $request->attributes->get('active_entity_id');
+        if ($activeEntityId) {
+            $validated['entity_id'] = $activeEntityId;
+        }
+
+        // Resolve entity_id: prefer (now-overridden) validated value, fall back to active entity scope
         $entityId = $validated['entity_id']
-            ?? $request->attributes->get('active_entity_id');
+            ?? $activeEntityId;
 
         if (! $entityId) {
             return $this->error('entity_id wajib ditentukan.', 422);
@@ -366,6 +372,12 @@ class EmployeeController extends Controller
 
         if (! $employmentRecord) {
             return $this->error('Data employment tidak ditemukan.', 404);
+        }
+
+        // Entity scope guard: prevent cross-entity update (IDOR)
+        $activeEntityId = $request->attributes->get('active_entity_id');
+        if ($activeEntityId && $employmentRecord->entity_id !== $activeEntityId) {
+            return $this->error('Akses ditolak.', 403);
         }
 
         $validated = $request->validate([
