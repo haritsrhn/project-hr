@@ -153,6 +153,9 @@ Route::middleware(['auth:sanctum', 'entity.scope'])
         Route::post('/runs/{run}/lock', [PayrollController::class, 'lock'])
             ->middleware('permission:payroll.lock');
 
+        Route::get('/runs/{run}/export', [PayrollController::class, 'export'])
+            ->middleware('permission:payroll.view_all');
+
         Route::get('/runs/{run}/items', [PayrollController::class, 'items'])
             ->middleware('permission:payroll.view_all');
 
