@@ -39,10 +39,7 @@ class EntityResource extends JsonResource
                 ])->values()
             ),
             '_count' => [
-                'employments' => $this->when(
-                    $this->relationLoaded('employments'),
-                    fn () => $this->employments->count()
-                ),
+                'employments' => $this->employments_count,
             ],
         ];
     }

@@ -10,6 +10,7 @@ use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Employment;
 use App\Models\Location;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -86,6 +87,11 @@ class AttendanceController extends Controller
             }
         }
 
+        // 3a. Block MANUAL method for non-admin roles
+        if ($request->method === 'MANUAL' && ! $user->hasAnyRole(['super_admin', 'entity_admin', 'hrd'])) {
+            return $this->error('Metode MANUAL hanya dapat digunakan oleh admin.', 403);
+        }
+
         if ($request->method === 'QR') {
             // Cocokkan token
             if ($request->qr_token !== $location->qr_code_token) {
@@ -106,18 +112,23 @@ class AttendanceController extends Controller
         $workStartTime = Carbon::today()->setTimeFromTimeString(self::WORK_START_TIME);
         $status        = $clockInTime->greaterThan($workStartTime) ? 'LATE' : 'PRESENT';
 
-        // 5. Simpan Attendance
-        $attendance = Attendance::create([
-            'employment_id' => $employment->id,
-            'date'          => $today,
-            'clock_in'      => $clockInTime->toTimeString(),
-            'method'        => $request->method,
-            'lat_in'        => $request->lat,
-            'lng_in'        => $request->lng,
-            'device_hash'   => $request->device_hash,
-            'location_id'   => $location->id,
-            'status'        => $status,
-        ]);
+        // 5. Simpan Attendance — catch race condition where two simultaneous requests
+        //    both pass the duplicate check before either inserts the row
+        try {
+            $attendance = Attendance::create([
+                'employment_id' => $employment->id,
+                'date'          => $today,
+                'clock_in'      => $clockInTime->toTimeString(),
+                'method'        => $request->method,
+                'lat_in'        => $request->lat,
+                'lng_in'        => $request->lng,
+                'device_hash'   => $request->device_hash,
+                'location_id'   => $location->id,
+                'status'        => $status,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return $this->error('Anda sudah melakukan clock-in hari ini.', 409);
+        }
 
         // 6. Catat ke audit_logs
         AuditLog::record(
@@ -277,6 +288,11 @@ class AttendanceController extends Controller
 
             $entityId = $primaryEmployment?->entity_id;
 
+            // Non-super_admin with no entity scope must not see all records
+            if (! $entityId && ! $user->hasRole('super_admin')) {
+                return $this->error('Data kepegawaian aktif tidak ditemukan.', 403);
+            }
+
             $query->whereHas('employment', function ($q) use ($entityId, $request) {
                 if ($entityId) {
                     $q->where('entity_id', $entityId);
@@ -330,7 +346,15 @@ class AttendanceController extends Controller
      */
     public function correct(CorrectAttendanceRequest $request, string $attendance): JsonResponse
     {
-        $record = Attendance::find($attendance);
+        $activeEntityId = $request->attributes->get('active_entity_id');
+
+        // Scope lookup to the admin's active entity to prevent IDOR across entities
+        $query = Attendance::query();
+        if ($activeEntityId) {
+            $query->whereHas('employment', fn ($q) => $q->where('entity_id', $activeEntityId));
+        }
+
+        $record = $query->find($attendance);
 
         if (! $record) {
             return $this->error('Data absensi tidak ditemukan.', 404);

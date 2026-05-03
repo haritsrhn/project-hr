@@ -288,6 +288,12 @@ class EmployeeController extends Controller
             'is_primary'      => ['nullable', 'boolean'],
         ]);
 
+        // Entity scope guard: non-super_admin can only add employment to their own entity
+        $activeEntityId = $request->attributes->get('active_entity_id');
+        if ($activeEntityId && $validated['entity_id'] !== $activeEntityId) {
+            return $this->error('Anda tidak memiliki akses untuk menambah employment ke entitas ini.', 403);
+        }
+
         // Check for existing ACTIVE employment in the same entity (409 Conflict)
         $duplicate = Employment::where('user_id', $record->id)
             ->where('entity_id', $validated['entity_id'])

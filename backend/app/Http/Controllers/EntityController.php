@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEntityRequest;
+use App\Http\Requests\UpdateEntityRequest;
 use App\Http\Resources\EntityResource;
 use App\Models\Entity;
 use Illuminate\Http\JsonResponse;
@@ -98,7 +99,7 @@ class EntityController extends Controller
      *
      * Update an existing entity (super_admin only).
      */
-    public function update(StoreEntityRequest $request, string $entity): JsonResponse
+    public function update(UpdateEntityRequest $request, string $entity): JsonResponse
     {
         $record = Entity::find($entity);
 
