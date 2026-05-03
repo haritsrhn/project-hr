@@ -8,7 +8,21 @@ export const attendanceApi = {
     apiClient.post('/attendance/clock-out', data ?? {}),
   today: () => apiClient.get('/attendance/today'),
   list: (params?: Record<string, string>) => apiClient.get('/attendance', { params }),
+  monthlyReport: (month: number, year: number) =>
+    apiClient.get('/attendance/monthly-report', { params: { month, year } }),
 }
+
+export function getMonthlyReport(month: number, year: number) {
+  return apiClient.get('/attendance/monthly-report', { params: { month, year } })
+}
+
+export const useMonthlyReport = (month: number, year: number, enabled: boolean) =>
+  useQuery({
+    queryKey: ['attendance-monthly-report', month, year],
+    queryFn: () => attendanceApi.monthlyReport(month, year).then((r) => r.data),
+    enabled,
+    retry: false,
+  })
 
 export const useTodayAttendance = () =>
   useQuery({

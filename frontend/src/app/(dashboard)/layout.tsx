@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   Clock,
+  ClipboardList,
   CalendarOff,
   Banknote,
   Settings,
@@ -33,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/overview', label: 'Overview', icon: LayoutDashboard, roles: null },
   { href: '/employees', label: 'Karyawan', icon: Users, roles: ['entity_admin', 'holding_admin', 'super_admin', 'manager'] },
   { href: '/attendance', label: 'Absensi', icon: Clock, roles: null },
+  { href: '/attendance/report', label: 'Rekap Bulanan', icon: ClipboardList, roles: ['entity_admin', 'holding_admin', 'super_admin'] },
   { href: '/leave', label: 'Cuti', icon: CalendarOff, roles: null },
   { href: '/payroll/runs', label: 'Payroll', icon: Banknote, roles: ['entity_admin', 'holding_admin', 'super_admin'] },
   { href: '/settings', label: 'Pengaturan', icon: Settings, roles: ['entity_admin', 'holding_admin', 'super_admin'] },
@@ -83,7 +85,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            // For /attendance, only match the exact path or sub-paths not claimed by other nav items
+            const isActive = pathname === item.href
+              || (pathname.startsWith(item.href + '/')
+                  && !NAV_ITEMS.some((other) => other.href !== item.href && pathname.startsWith(other.href)))
             const Icon = item.icon
 
             const link = (

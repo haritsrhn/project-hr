@@ -9,6 +9,7 @@ use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Employment;
+use App\Models\LeaveRequest;
 use App\Models\Location;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -336,6 +337,83 @@ class AttendanceController extends Controller
         return $this->success(
             AttendanceResource::collection($attendances)->response()->getData(true)
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Monthly Report
+    // -------------------------------------------------------------------------
+
+    /**
+     * Return a per-employee attendance summary for a given month/year.
+     * Accessible only to users with the attendance.view_all permission.
+     *
+     * Query params: ?month=5&year=2026
+     */
+    public function monthlyReport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year'  => 'required|integer|min:2020|max:2099',
+        ]);
+
+        $month    = (int) $request->month;
+        $year     = (int) $request->year;
+        $entityId = $request->attributes->get('active_entity_id');
+
+        // Hitung total hari kerja di bulan tersebut (Senin-Jumat)
+        $daysInMonth = Carbon::createFromDate($year, $month)->daysInMonth;
+        $workingDays = 0;
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $dow = Carbon::createFromDate($year, $month, $d)->dayOfWeek;
+            if ($dow >= 1 && $dow <= 5) {
+                $workingDays++;
+            }
+        }
+
+        // Query semua employments aktif di entitas
+        $employmentsQuery = Employment::with('user')
+            ->where('status', 'active');
+        if ($entityId) {
+            $employmentsQuery->where('entity_id', $entityId);
+        }
+        $employments = $employmentsQuery->get();
+
+        $report = $employments->map(function ($emp) use ($month, $year) {
+            $attendances = Attendance::where('employment_id', $emp->id)
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->get();
+
+            $present = $attendances->whereIn('status', ['PRESENT', 'LATE'])->count();
+            $late    = $attendances->where('status', 'LATE')->count();
+            $absent  = $attendances->where('status', 'ABSENT')->count();
+
+            // Hitung cuti yang disetujui di bulan ini
+            $leaveCount = LeaveRequest::where('employment_id', $emp->id)
+                ->where('status', 'APPROVED')
+                ->where(function ($q) use ($month, $year) {
+                    $q->whereMonth('start_date', $month)->whereYear('start_date', $year)
+                      ->orWhereMonth('end_date', $month)->whereYear('end_date', $year);
+                })->count();
+
+            return [
+                'employment_id' => $emp->id,
+                'name'          => $emp->user->name,
+                'nik'           => $emp->nik,
+                'position'      => $emp->position,
+                'present'       => $present,
+                'late'          => $late,
+                'absent'        => $absent,
+                'leave'         => $leaveCount,
+            ];
+        });
+
+        return $this->success([
+            'month'        => $month,
+            'year'         => $year,
+            'working_days' => $workingDays,
+            'employees'    => $report,
+        ]);
     }
 
     // -------------------------------------------------------------------------

@@ -104,6 +104,10 @@ Route::middleware(['auth:sanctum'])
         Route::get('/', [AttendanceController::class, 'index'])
             ->middleware('permission:attendance.view_own');
 
+        // Monthly report — must be declared before /{attendance}/correct to avoid route conflict
+        Route::get('/monthly-report', [AttendanceController::class, 'monthlyReport'])
+            ->middleware(['entity.scope', 'permission:attendance.view_all']);
+
         Route::put('/{attendance}/correct', [AttendanceController::class, 'correct'])
             ->middleware(['entity.scope', 'permission:attendance.correct']);
     });
