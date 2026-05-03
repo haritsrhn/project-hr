@@ -24,9 +24,14 @@ class PayrollController extends Controller
     {
         $entityId = $request->attributes->get('active_entity_id');
 
-        $query = PayrollRun::where('entity_id', $entityId)
+        $query = PayrollRun::query()
             ->orderByDesc('period_year')
             ->orderByDesc('period_month');
+
+        if ($entityId) {
+            $query->where('entity_id', $entityId);
+        }
+        // If $entityId is null (super_admin), no entity filter → returns all entities
 
         if ($year = $request->query('year')) {
             $query->where('period_year', (int) $year);
@@ -50,19 +55,29 @@ class PayrollController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $entityId = $request->attributes->get('active_entity_id');
+
         try {
-            $validated = $request->validate([
+            $rules = [
                 'period_month' => ['required', 'integer', 'min:1', 'max:12'],
                 'period_year'  => ['required', 'integer', 'min:' . (now()->year - 1), 'max:' . (now()->year + 1)],
-            ]);
+            ];
+
+            // super_admin is not scoped to an entity, so they must supply one explicitly
+            if (! $entityId) {
+                $rules['entity_id'] = ['required', 'uuid', 'exists:entities,id'];
+            }
+
+            $validated = $request->validate($rules);
         } catch (ValidationException $e) {
             return $this->error('Data tidak valid.', 422, $e->errors());
         }
 
-        $entityId = $request->attributes->get('active_entity_id');
+        // Resolve the entity to write: prefer explicit body value (super_admin path), else middleware-scoped value
+        $resolvedEntityId = $entityId ?? $validated['entity_id'];
 
         // Check for duplicate run in the same entity + period
-        $existing = PayrollRun::where('entity_id', $entityId)
+        $existing = PayrollRun::where('entity_id', $resolvedEntityId)
             ->where('period_month', $validated['period_month'])
             ->where('period_year', $validated['period_year'])
             ->first();
@@ -76,7 +91,7 @@ class PayrollController extends Controller
         }
 
         $run = PayrollRun::create([
-            'entity_id'    => $entityId,
+            'entity_id'    => $resolvedEntityId,
             'period_month' => $validated['period_month'],
             'period_year'  => $validated['period_year'],
             'status'       => 'DRAFT',
@@ -90,10 +105,13 @@ class PayrollController extends Controller
      */
     public function show(Request $request, string $run): JsonResponse
     {
-        $entityId   = $request->attributes->get('active_entity_id');
-        $payrollRun = PayrollRun::where('id', $run)
-            ->where('entity_id', $entityId)
-            ->first();
+        $entityId = $request->attributes->get('active_entity_id');
+
+        $query = PayrollRun::where('id', $run);
+        if ($entityId) {
+            $query->where('entity_id', $entityId);
+        }
+        $payrollRun = $query->first();
 
         if (! $payrollRun) {
             return $this->error('Payroll run tidak ditemukan.', 404);
@@ -107,10 +125,13 @@ class PayrollController extends Controller
      */
     public function process(Request $request, string $run): JsonResponse
     {
-        $entityId   = $request->attributes->get('active_entity_id');
-        $payrollRun = PayrollRun::where('id', $run)
-            ->where('entity_id', $entityId)
-            ->first();
+        $entityId = $request->attributes->get('active_entity_id');
+
+        $query = PayrollRun::where('id', $run);
+        if ($entityId) {
+            $query->where('entity_id', $entityId);
+        }
+        $payrollRun = $query->first();
 
         if (! $payrollRun) {
             return $this->error('Payroll run tidak ditemukan.', 404);
@@ -128,7 +149,8 @@ class PayrollController extends Controller
 
         return $this->success(
             ['run_id' => $payrollRun->id, 'status' => 'processing'],
-            'Proses kalkulasi payroll telah dimulai. Hasil akan tersedia segera.'
+            'Kalkulasi payroll sedang diproses.',
+            202
         );
     }
 
@@ -137,10 +159,13 @@ class PayrollController extends Controller
      */
     public function lock(Request $request, string $run): JsonResponse
     {
-        $entityId   = $request->attributes->get('active_entity_id');
-        $payrollRun = PayrollRun::where('id', $run)
-            ->where('entity_id', $entityId)
-            ->first();
+        $entityId = $request->attributes->get('active_entity_id');
+
+        $query = PayrollRun::where('id', $run);
+        if ($entityId) {
+            $query->where('entity_id', $entityId);
+        }
+        $payrollRun = $query->first();
 
         if (! $payrollRun) {
             return $this->error('Payroll run tidak ditemukan.', 404);
@@ -169,10 +194,13 @@ class PayrollController extends Controller
      */
     public function items(Request $request, string $run): JsonResponse
     {
-        $entityId   = $request->attributes->get('active_entity_id');
-        $payrollRun = PayrollRun::where('id', $run)
-            ->where('entity_id', $entityId)
-            ->first();
+        $entityId = $request->attributes->get('active_entity_id');
+
+        $runQuery = PayrollRun::where('id', $run);
+        if ($entityId) {
+            $runQuery->where('entity_id', $entityId);
+        }
+        $payrollRun = $runQuery->first();
 
         if (! $payrollRun) {
             return $this->error('Payroll run tidak ditemukan.', 404);
@@ -224,13 +252,13 @@ class PayrollController extends Controller
 
         $employment = $payrollItem->employment;
 
-        // Verify item belongs to the active entity
-        if (! $employment || $employment->entity_id !== $entityId) {
+        // Verify item belongs to the active entity (skip check for super_admin with no entity scope)
+        if (! $employment || ($entityId && $employment->entity_id !== $entityId)) {
             return $this->error('Akses ditolak.', 403);
         }
 
         // If the requester is an employee (not an admin), restrict to own slip
-        $isAdmin = $authUser->hasRole(['super_admin', 'entity_admin', 'hr_staff']);
+        $isAdmin = $authUser->hasRole(['super_admin', 'entity_admin']);
 
         if (! $isAdmin) {
             // Resolve the user's employment in this entity and compare
@@ -263,11 +291,12 @@ class PayrollController extends Controller
 
         $employment = $payrollItem->employment;
 
-        if (! $employment || $employment->entity_id !== $entityId) {
+        // Verify item belongs to the active entity (skip check for super_admin with no entity scope)
+        if (! $employment || ($entityId && $employment->entity_id !== $entityId)) {
             return $this->error('Akses ditolak.', 403);
         }
 
-        $isAdmin = $authUser->hasRole(['super_admin', 'entity_admin', 'hr_staff']);
+        $isAdmin = $authUser->hasRole(['super_admin', 'entity_admin']);
 
         if (! $isAdmin) {
             $userEmploymentIds = Employment::where('user_id', $authUser->id)
@@ -279,14 +308,25 @@ class PayrollController extends Controller
             }
         }
 
-        $path = $payrollItem->slip_url;
+        $slipPath = $payrollItem->slip_url;
 
-        if (! Storage::disk('local')->exists($path)) {
+        // Validate path stays within the slip storage directory
+        $allowedPrefix = 'slips/';
+        if (! $slipPath || ! str_starts_with($slipPath, $allowedPrefix)) {
+            return $this->error('Slip tidak tersedia.', 404);
+        }
+
+        // Reject directory traversal sequences
+        if (str_contains($slipPath, '..') || str_contains($slipPath, "\0")) {
+            return $this->error('Path tidak valid.', 400);
+        }
+
+        if (! Storage::disk('local')->exists($slipPath)) {
             return $this->error('File slip tidak ditemukan.', 404);
         }
 
         return Storage::disk('local')->download(
-            $path,
+            $slipPath,
             "slip-gaji-{$payrollItem->payrollRun?->period_year}-{$payrollItem->payrollRun?->period_month}.pdf",
             ['Content-Type' => 'application/pdf']
         );

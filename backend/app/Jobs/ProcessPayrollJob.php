@@ -99,10 +99,13 @@ class ProcessPayrollJob implements ShouldQueue
                 'processed_at'    => now(),
             ]);
 
-            // 6. Dispatch GeneratePayslipJob for each item
-            foreach ($createdItemIds as $itemId) {
-                GeneratePayslipJob::dispatch($itemId);
-            }
+            // 6. Dispatch GeneratePayslipJob AFTER the transaction commits so the
+            //    job always reads fully-committed PayrollItem rows from the database.
+            DB::afterCommit(function () use ($createdItemIds) {
+                foreach ($createdItemIds as $itemId) {
+                    GeneratePayslipJob::dispatch($itemId);
+                }
+            });
         });
     }
 }
