@@ -25,7 +25,7 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
   const { data: itemsData, isPending: loadingItems } = usePayrollItems(
     run?.status !== 'DRAFT' ? id : ''
   )
-  const items: PayrollItem[] = itemsData?.data ?? []
+  const items: PayrollItem[] = itemsData?.data?.data ?? []
 
   const processRun = useProcessRun()
   const lockRun = useLockRun()

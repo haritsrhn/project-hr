@@ -69,7 +69,7 @@ export default function PayrollRunsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Payroll Runs</h1>
         <div className="flex items-center gap-3">
           <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="w-28">
+            <SelectTrigger aria-label="Filter tahun" className="w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -81,7 +81,7 @@ export default function PayrollRunsPage() {
             </SelectContent>
           </Select>
           <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus aria-hidden="true" className="h-4 w-4 mr-2" />
             Buat Payroll Bulan Ini
           </Button>
         </div>
@@ -105,12 +105,12 @@ export default function PayrollRunsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Periode</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">Karyawan</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">Total Gross</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600">Total Net</th>
-                  <th className="px-4 py-3 text-center font-medium text-gray-600">Status</th>
-                  <th className="px-4 py-3" />
+                  <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Periode</th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium text-gray-600">Karyawan</th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium text-gray-600">Total Gross</th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium text-gray-600">Total Net</th>
+                  <th scope="col" className="px-4 py-3 text-center font-medium text-gray-600">Status</th>
+                  <th scope="col" className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -150,12 +150,12 @@ export default function PayrollRunsPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Bulan</Label>
+              <Label htmlFor="select-month">Bulan</Label>
               <Select
                 value={String(watch('period_month'))}
                 onValueChange={(v) => setValue('period_month', Number(v))}
               >
-                <SelectTrigger>
+                <SelectTrigger id="select-month">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -168,12 +168,12 @@ export default function PayrollRunsPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Tahun</Label>
+              <Label htmlFor="select-year">Tahun</Label>
               <Select
                 value={String(watch('period_year'))}
                 onValueChange={(v) => setValue('period_year', Number(v))}
               >
-                <SelectTrigger>
+                <SelectTrigger id="select-year">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,7 +190,7 @@ export default function PayrollRunsPage() {
                 Batal
               </Button>
               <Button type="submit" disabled={createRun.isPending}>
-                {createRun.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {createRun.isPending && <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />}
                 Buat
               </Button>
             </div>

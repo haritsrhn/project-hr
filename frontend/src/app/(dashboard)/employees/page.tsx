@@ -27,7 +27,7 @@ export default function EmployeesPage() {
   const { data, isPending, isError } = useEmployees(params)
 
   const employees: { user: { id: string; name: string; email: string }; employments: Employment[] }[] =
-    data?.data ?? []
+    data?.data?.data ?? []
 
   const filtered = search
     ? employees.filter(
@@ -43,15 +43,16 @@ export default function EmployeesPage() {
         <h1 className="text-2xl font-bold text-gray-900">Karyawan</h1>
         <Link href="/employees/new">
           <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus aria-hidden="true" className="h-4 w-4 mr-2" />
             Tambah Karyawan
           </Button>
         </Link>
       </div>
 
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+        <Search aria-hidden="true" className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
         <Input
+          aria-label="Cari karyawan"
           placeholder="Cari nama atau email..."
           className="pl-9"
           value={search}
@@ -85,12 +86,12 @@ export default function EmployeesPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Nama</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Jabatan</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Departemen</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Tipe</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
-                  <th className="px-4 py-3" />
+                  <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Nama</th>
+                  <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Jabatan</th>
+                  <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Departemen</th>
+                  <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Tipe</th>
+                  <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                  <th scope="col" className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y">
