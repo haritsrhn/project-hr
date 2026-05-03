@@ -19,6 +19,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
   const slip: PayrollItem | null = slipData?.data ?? null
   const run: PayrollRun | null = runData?.data ?? null
+  const slipUrl = slip?.slipUrl ?? null
 
   const isLoading = loadingSlip || loadingRun
 
@@ -51,11 +52,11 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
           Kembali
         </Button>
         <div className="flex gap-2">
-          {slip.slipUrl && (
+          {slipUrl && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(slip.slipUrl!, '_blank')}
+              onClick={() => window.open(slipUrl, '_blank')}
             >
               <Download className="h-4 w-4 mr-2" />
               Download PDF

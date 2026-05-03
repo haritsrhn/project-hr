@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { MapPin, Clock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function AttendancePage() {
   const [selectedLocationId, setSelectedLocationId] = useState<string>('')
+  const clockingIn = useRef(false)
 
   const geo = useGeolocation()
   const { data: todayData, isPending: loadingToday } = useTodayAttendance()
@@ -50,10 +51,12 @@ export default function AttendancePage() {
     : null
 
   const handleClockIn = async () => {
+    if (clockingIn.current) return
     if (!geo.lat || !geo.lng) {
       toast.error('Lokasi GPS belum tersedia.')
       return
     }
+    clockingIn.current = true
     try {
       await clockIn.mutateAsync({
         lat: geo.lat,
@@ -67,6 +70,8 @@ export default function AttendancePage() {
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Clock-in gagal.'
       toast.error(msg)
+    } finally {
+      clockingIn.current = false
     }
   }
 

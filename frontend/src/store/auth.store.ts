@@ -21,16 +21,20 @@ export const useAuthStore = create<AuthState>()(
       activeEmployment: null,
 
       setAuth: (user, token) => {
-        localStorage.setItem('auth_token', token)
-        document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', token)
+          document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`
+        }
         set({ user, token, activeEmployment: user.primaryEmployment })
       },
 
       setActiveEmployment: (employment) => set({ activeEmployment: employment }),
 
       clearAuth: () => {
-        localStorage.removeItem('auth_token')
-        document.cookie = 'auth_token=; path=/; max-age=0'
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token')
+          document.cookie = 'auth_token=; path=/; max-age=0'
+        }
         set({ user: null, token: null, activeEmployment: null })
       },
 

@@ -185,8 +185,6 @@ export default function PayrollRunsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <input type="hidden" {...register('period_month')} />
-            <input type="hidden" {...register('period_year')} />
             <div className="flex gap-2 justify-end pt-2">
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
                 Batal

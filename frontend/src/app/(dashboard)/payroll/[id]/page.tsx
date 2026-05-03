@@ -170,7 +170,7 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
                     <th className="px-4 py-3 text-right font-medium text-gray-600">BPJS</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">PPh 21</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">Net</th>
-                    {run.status !== 'PAID' && <th className="px-4 py-3" />}
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y">

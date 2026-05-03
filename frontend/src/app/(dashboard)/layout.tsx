@@ -18,14 +18,22 @@ import { useAuthStore } from '@/store/auth.store'
 import { authApi } from '@/lib/api/auth'
 import { cn } from '@/lib/utils'
 import { RoleGate } from '@/components/shared/RoleGate'
+import type { RoleSlug } from '@/types'
 
-const NAV_ITEMS = [
+type NavItem = {
+  href: string
+  label: string
+  icon: React.ElementType
+  roles: RoleSlug[] | null
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: '/overview', label: 'Overview', icon: LayoutDashboard, roles: null },
-  { href: '/employees', label: 'Karyawan', icon: Users, roles: ['entity_admin', 'holding_admin', 'super_admin', 'manager'] as const },
+  { href: '/employees', label: 'Karyawan', icon: Users, roles: ['entity_admin', 'holding_admin', 'super_admin', 'manager'] },
   { href: '/attendance', label: 'Absensi', icon: Clock, roles: null },
   { href: '/leave', label: 'Cuti', icon: CalendarOff, roles: null },
-  { href: '/payroll/runs', label: 'Payroll', icon: Banknote, roles: ['entity_admin', 'holding_admin', 'super_admin'] as const },
-  { href: '/settings', label: 'Pengaturan', icon: Settings, roles: ['entity_admin', 'holding_admin', 'super_admin'] as const },
+  { href: '/payroll/runs', label: 'Payroll', icon: Banknote, roles: ['entity_admin', 'holding_admin', 'super_admin'] },
+  { href: '/settings', label: 'Pengaturan', icon: Settings, roles: ['entity_admin', 'holding_admin', 'super_admin'] },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -82,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             if (item.roles) {
               return (
-                <RoleGate key={item.href} allowedRoles={item.roles as never[]}>
+                <RoleGate key={item.href} allowedRoles={item.roles}>
                   {link}
                 </RoleGate>
               )
