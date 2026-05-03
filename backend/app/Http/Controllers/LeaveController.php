@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LeaveRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -46,9 +47,27 @@ class LeaveController extends Controller
     /**
      * Approve a pending leave request.
      * Full implementation: Issue #5
+     *
+     * Note: activity logging is wired here; full business logic pending Issue #5.
      */
     public function approve(Request $request, string $leaveRequest): JsonResponse
     {
+        $leave = LeaveRequest::find($leaveRequest);
+
+        if ($leave) {
+            activity('leave')
+                ->causedBy($request->user())
+                ->performedOn($leave)
+                ->withProperties([
+                    'employment_id' => $leave->employment_id,
+                    'leave_type_id' => $leave->leave_type_id,
+                    'start_date'    => $leave->start_date,
+                    'end_date'      => $leave->end_date,
+                    'total_days'    => $leave->total_days,
+                ])
+                ->log('leave_approved');
+        }
+
         return $this->success([], 'Coming soon', 501);
     }
 

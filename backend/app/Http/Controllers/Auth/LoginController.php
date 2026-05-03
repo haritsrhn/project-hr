@@ -50,7 +50,7 @@ class LoginController extends Controller
         // Buat Sanctum personal access token
         $token = $user->createToken('api')->plainTextToken;
 
-        // Catat login berhasil di audit_logs
+        // Catat login berhasil di audit_logs (custom)
         AuditLog::record(
             action: 'user.login',
             userId: $user->id,
@@ -58,6 +58,16 @@ class LoginController extends Controller
             ipAddress: $request->ip(),
             userAgent: $request->userAgent(),
         );
+
+        // Catat login berhasil di spatie activity_log
+        activity('auth')
+            ->causedBy($user)
+            ->performedOn($user)
+            ->withProperties([
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ])
+            ->log('login');
 
         return response()->json([
             'token' => $token,
@@ -84,6 +94,16 @@ class LoginController extends Controller
             ipAddress: $request->ip(),
             userAgent: $request->userAgent(),
         );
+
+        // Catat logout di spatie activity_log
+        activity('auth')
+            ->causedBy($user)
+            ->performedOn($user)
+            ->withProperties([
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ])
+            ->log('logout');
 
         return response()->json([
             'message' => 'Berhasil keluar.',

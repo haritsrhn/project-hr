@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Attendance extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $primaryKey = 'id';
     public $incrementing = false;
@@ -41,6 +43,15 @@ class Attendance extends Model
             'lat_out' => 'decimal:7',
             'lng_out' => 'decimal:7',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('attendance')
+            ->logOnly(['clock_in', 'clock_out', 'status', 'notes', 'corrected_by'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected static function boot(): void

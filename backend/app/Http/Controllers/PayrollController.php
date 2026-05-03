@@ -147,6 +147,16 @@ class PayrollController extends Controller
 
         ProcessPayrollJob::dispatch($payrollRun->id, $request->user()?->id);
 
+        activity('payroll')
+            ->causedBy($request->user())
+            ->performedOn($payrollRun)
+            ->withProperties([
+                'entity_id'    => $payrollRun->entity_id,
+                'period_month' => $payrollRun->period_month,
+                'period_year'  => $payrollRun->period_year,
+            ])
+            ->log('payroll_processed');
+
         return $this->success(
             ['run_id' => $payrollRun->id, 'status' => 'processing'],
             'Kalkulasi payroll sedang diproses.',
@@ -184,6 +194,17 @@ class PayrollController extends Controller
             'locked_by'  => $request->user()?->id,
             'locked_at'  => now(),
         ]);
+
+        activity('payroll')
+            ->causedBy($request->user())
+            ->performedOn($payrollRun)
+            ->withProperties([
+                'entity_id'    => $payrollRun->entity_id,
+                'period_month' => $payrollRun->period_month,
+                'period_year'  => $payrollRun->period_year,
+                'locked_at'    => $payrollRun->locked_at,
+            ])
+            ->log('payroll_locked');
 
         return $this->success(new PayrollRunResource($payrollRun), 'Payroll run telah dikunci (PAID).');
     }
