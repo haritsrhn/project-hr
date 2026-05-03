@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -16,6 +17,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/store/auth.store'
 import { authApi } from '@/lib/api/auth'
+import apiClient from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 import { RoleGate } from '@/components/shared/RoleGate'
 import type { RoleSlug } from '@/types'
@@ -39,7 +41,19 @@ const NAV_ITEMS: NavItem[] = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, activeEmployment, clearAuth } = useAuthStore()
+  const { token, user, activeEmployment, clearAuth, setAuth } = useAuthStore()
+
+  useEffect(() => {
+    if (token && !user) {
+      apiClient.get('/auth/me')
+        .then(res => {
+          setAuth(res.data.data, token)
+        })
+        .catch(() => {
+          useAuthStore.getState().clearAuth()
+        })
+    }
+  }, [token, user])
 
   const handleLogout = async () => {
     try {
@@ -76,6 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? 'page' : undefined}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   isActive
@@ -83,7 +98,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
                 {item.label}
               </Link>
             )
@@ -119,7 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="w-full justify-start text-gray-600 hover:text-gray-900"
             onClick={handleLogout}
           >
-            <LogOut className="h-4 w-4 mr-2" />
+            <LogOut aria-hidden="true" className="h-4 w-4 mr-2" />
             Keluar
           </Button>
         </div>

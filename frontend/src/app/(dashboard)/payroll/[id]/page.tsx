@@ -90,7 +90,7 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft aria-hidden="true" className="h-4 w-4 mr-2" />
             Kembali
           </Button>
           <div>
@@ -99,7 +99,7 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
           <PayrollStatusBadge status={run.status} />
           {polling && (
             <div className="flex items-center gap-1.5 text-sm text-blue-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
               Memproses...
             </div>
           )}
@@ -108,14 +108,14 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
           {run.status === 'DRAFT' && !polling && (
             <Button onClick={handleProcess} disabled={processRun.isPending}>
               {processRun.isPending
-                ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                : <Settings className="h-4 w-4 mr-2" />}
+                ? <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+                : <Settings aria-hidden="true" className="h-4 w-4 mr-2" />}
               Proses Kalkulasi
             </Button>
           )}
           {run.status === 'PROCESSED' && (
             <Button variant="outline" onClick={() => setShowLockConfirm(true)}>
-              <Lock className="h-4 w-4 mr-2" />
+              <Lock aria-hidden="true" className="h-4 w-4 mr-2" />
               Finalisasi & Kunci
             </Button>
           )}
@@ -164,13 +164,13 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Karyawan</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Jabatan</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Gross</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">BPJS</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">PPh 21</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Net</th>
-                    <th className="px-4 py-3" />
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Karyawan</th>
+                    <th scope="col" className="px-4 py-3 text-left font-medium text-gray-600">Jabatan</th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium text-gray-600">Gross</th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium text-gray-600">BPJS</th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium text-gray-600">PPh 21</th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium text-gray-600">Net</th>
+                    <th scope="col" className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -242,7 +242,7 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
               Batal
             </Button>
             <Button onClick={handleLock} disabled={lockRun.isPending}>
-              {lockRun.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {lockRun.isPending && <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />}
               Ya, Kunci
             </Button>
           </div>

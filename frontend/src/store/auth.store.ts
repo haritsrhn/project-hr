@@ -43,6 +43,13 @@ export const useAuthStore = create<AuthState>()(
       hasAnyRole: (roles) =>
         roles.some((role) => get().user?.roles.includes(role) ?? false),
     }),
-    { name: 'auth-store', partialize: (state) => ({ token: state.token }) }
+    {
+      name: 'auth-store',
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+        activeEmployment: state.activeEmployment,
+      }),
+    }
   )
 )

@@ -21,7 +21,7 @@ export function PayslipView({ item, run }: PayslipViewProps) {
   const totalDeductions = bpjsKes + bpjsJht + pph21 + customDeductions
 
   return (
-    <div className="bg-white border rounded-lg p-8 max-w-lg mx-auto font-mono text-sm print:border-none print:shadow-none">
+    <div className="bg-white border rounded-lg p-8 max-w-lg mx-auto font-mono text-sm print:border-none print:shadow-none print-area">
       {/* Header */}
       <div className="text-center mb-6 border-b pb-4">
         <p className="text-base font-bold uppercase">{run.entity?.name ?? 'Perusahaan'}</p>

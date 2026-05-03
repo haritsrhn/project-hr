@@ -113,13 +113,13 @@ export default function AttendancePage() {
               <div className="flex gap-6 text-sm text-gray-600">
                 {today.clockIn && (
                   <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock aria-hidden="true" className="h-3.5 w-3.5" />
                     Masuk: {today.clockIn.slice(0, 5)}
                   </span>
                 )}
                 {today.clockOut && (
                   <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock aria-hidden="true" className="h-3.5 w-3.5" />
                     Keluar: {today.clockOut.slice(0, 5)}
                   </span>
                 )}
@@ -139,19 +139,19 @@ export default function AttendancePage() {
         <CardContent className="space-y-3">
           {geo.loading && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
               Mendapatkan lokasi...
             </div>
           )}
           {geo.error && (
-            <div className="flex items-start gap-2 text-sm text-red-600">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div role="alert" className="flex items-start gap-2 text-sm text-red-600">
+              <AlertCircle aria-hidden="true" className="h-4 w-4 mt-0.5 shrink-0" />
               <span>{geo.error}</span>
             </div>
           )}
           {geo.lat && geo.lng && (
             <div className="flex items-center gap-2 text-sm text-green-700">
-              <CheckCircle2 className="h-4 w-4" />
+              <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
               <span>
                 {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}
                 {geo.accuracy && ` (±${Math.round(geo.accuracy)}m)`}
@@ -181,7 +181,7 @@ export default function AttendancePage() {
           {/* Distance info */}
           {distance !== null && selectedLocation && (
             <div className={`flex items-center gap-2 text-sm ${withinRadius ? 'text-green-700' : 'text-orange-600'}`}>
-              <MapPin className="h-4 w-4" />
+              <MapPin aria-hidden="true" className="h-4 w-4" />
               <span>
                 Jarak: {distance}m dari {selectedLocation.name}
                 {withinRadius
@@ -201,7 +201,7 @@ export default function AttendancePage() {
             disabled={geo.loading || !!geo.error || clockIn.isPending}
             className="flex-1"
           >
-            {clockIn.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {clockIn.isPending && <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />}
             Clock In
           </Button>
         )}
@@ -212,7 +212,7 @@ export default function AttendancePage() {
             disabled={clockOut.isPending}
             className="flex-1"
           >
-            {clockOut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {clockOut.isPending && <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />}
             Clock Out
           </Button>
         )}
