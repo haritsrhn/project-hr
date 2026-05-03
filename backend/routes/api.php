@@ -160,6 +160,10 @@ Route::middleware(['auth:sanctum', 'entity.scope'])
         // can only retrieve their own slip; admins get any slip
         Route::get('/items/{item}/slip', [PayrollController::class, 'slip'])
             ->middleware('permission:payroll.view_own_slip');
+
+        // Streams PDF from local (private) storage — same ownership rules as above
+        Route::get('/items/{item}/slip-download', [PayrollController::class, 'downloadSlip'])
+            ->middleware('permission:payroll.view_own_slip');
     });
 
 // ── LOCATIONS (QR & Geofence config) ─────────────────────────────────────

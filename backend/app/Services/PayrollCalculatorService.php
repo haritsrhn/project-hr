@@ -5,9 +5,12 @@ namespace App\Services;
 use App\Models\Attendance;
 use App\Models\Employment;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class PayrollCalculatorService
 {
+    /** @var array<string, Collection> Keyed by "employmentId:month:year" */
+    private array $attendanceCache = [];
     /**
      * PTKP values per status (annual, in IDR)
      */
@@ -52,10 +55,7 @@ class PayrollCalculatorService
         // ── B. Attendance ────────────────────────────────────────────────────
         $workingDays = $this->countBusinessDays($month, $year);
 
-        $attendances  = Attendance::where('employment_id', $employment->id)
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month)
-            ->get();
+        $attendances = $this->getAttendances($employment->id, $month, $year);
 
         $presentDays = $attendances->whereIn('status', ['PRESENT', 'LATE'])->count();
         $leaveDays   = $attendances->where('status', 'LEAVE')->count();
@@ -91,10 +91,13 @@ class PayrollCalculatorService
         }
 
         // ── E. PPh 21 ────────────────────────────────────────────────────────
+        // Per PMK 168/2023, BPJS JP employee contribution is deducted before
+        // computing PKP (treated as a pre-tax deduction alongside biaya jabatan).
         $annualGross    = $gross * 12;
+        $annualBpjsJp   = $bpjsJpEmployee * 12;
         $biayaJabatan   = min((int) round(0.05 * $annualGross), 6_000_000);
         $ptkp           = self::PTKP[$employment->ptkp_status ?? 'TK0'] ?? 54_000_000;
-        $pkp            = max(0, $annualGross - $biayaJabatan - $ptkp);
+        $pkp            = max(0, $annualGross - $biayaJabatan - $annualBpjsJp - $ptkp);
 
         [$annualTax, $pph21Breakdown] = $this->calculateProgressiveTax($pkp);
 
@@ -137,6 +140,44 @@ class PayrollCalculatorService
             'absent_days'        => $absentDays,
             'leave_days'         => $leaveDays,
         ];
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cache helpers (N+1 prevention)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Pre-load all attendance rows for a batch of employments in a single query.
+     * Call this before processing a full payroll run to avoid N+1 per employee.
+     *
+     * @param  string[]  $employmentIds
+     */
+    public function prefetchAttendances(array $employmentIds, int $month, int $year): void
+    {
+        $rows = Attendance::whereIn('employment_id', $employmentIds)
+            ->whereYear('date', $year)
+            ->whereMonth('date', $month)
+            ->get()
+            ->groupBy('employment_id');
+
+        foreach ($employmentIds as $id) {
+            $key = "{$id}:{$month}:{$year}";
+            $this->attendanceCache[$key] = $rows->get($id, collect());
+        }
+    }
+
+    private function getAttendances(string $employmentId, int $month, int $year): Collection
+    {
+        $key = "{$employmentId}:{$month}:{$year}";
+
+        if (! isset($this->attendanceCache[$key])) {
+            $this->attendanceCache[$key] = Attendance::where('employment_id', $employmentId)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->get();
+        }
+
+        return $this->attendanceCache[$key];
     }
 
     // ─────────────────────────────────────────────────────────────────────────

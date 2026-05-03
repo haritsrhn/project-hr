@@ -10,7 +10,9 @@ use App\Models\PayrollItem;
 use App\Models\PayrollRun;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayrollController extends Controller
 {
@@ -186,9 +188,17 @@ class PayrollController extends Controller
             });
         }
 
-        $items = $query->get();
+        $paginator = $query->paginate(50);
 
-        return $this->success(PayrollItemResource::collection($items));
+        return $this->success([
+            'data'       => PayrollItemResource::collection($paginator->items()),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+            ],
+        ]);
     }
 
     /**
@@ -234,5 +244,51 @@ class PayrollController extends Controller
         }
 
         return $this->success(new PayrollItemResource($payrollItem));
+    }
+
+    /**
+     * Stream the PDF slip file from local (private) storage.
+     * Uses same ownership checks as slip().
+     */
+    public function downloadSlip(Request $request, string $item): StreamedResponse|JsonResponse
+    {
+        $entityId = $request->attributes->get('active_entity_id');
+        $authUser = $request->user();
+
+        $payrollItem = PayrollItem::with(['employment', 'payrollRun'])->find($item);
+
+        if (! $payrollItem || ! $payrollItem->slip_url) {
+            return $this->error('Slip gaji belum tersedia.', 404);
+        }
+
+        $employment = $payrollItem->employment;
+
+        if (! $employment || $employment->entity_id !== $entityId) {
+            return $this->error('Akses ditolak.', 403);
+        }
+
+        $isAdmin = $authUser->hasRole(['super_admin', 'entity_admin', 'hr_staff']);
+
+        if (! $isAdmin) {
+            $userEmploymentIds = Employment::where('user_id', $authUser->id)
+                ->where('entity_id', $entityId)
+                ->pluck('id');
+
+            if (! $userEmploymentIds->contains($employment->id)) {
+                return $this->error('Anda hanya dapat mengunduh slip gaji milik Anda sendiri.', 403);
+            }
+        }
+
+        $path = $payrollItem->slip_url;
+
+        if (! Storage::disk('local')->exists($path)) {
+            return $this->error('File slip tidak ditemukan.', 404);
+        }
+
+        return Storage::disk('local')->download(
+            $path,
+            "slip-gaji-{$payrollItem->payrollRun?->period_year}-{$payrollItem->payrollRun?->period_month}.pdf",
+            ['Content-Type' => 'application/pdf']
+        );
     }
 }

@@ -33,6 +33,11 @@ class GeneratePayslipJob implements ShouldQueue
             return;
         }
 
+        // Skip if slip was already generated (prevents double dispatch on retry)
+        if ($item->slip_url) {
+            return;
+        }
+
         $employment = $item->employment;
         $user       = $employment?->user;
         $entity     = $employment?->entity;
@@ -59,12 +64,13 @@ class GeneratePayslipJob implements ShouldQueue
 
         $pdf->setPaper('A4', 'portrait');
 
-        // 4. Store PDF on public disk
+        // 4. Store PDF on the local (private) disk — not publicly accessible via URL.
+        //    Slips are served through the authenticated /api/payroll/items/{id}/slip-download
+        //    endpoint rather than being exposed directly via public storage.
         $relativePath = "slips/{$run->id}/{$employment->id}.pdf";
-        Storage::disk('public')->put($relativePath, $pdf->output());
+        Storage::disk('local')->put($relativePath, $pdf->output());
 
-        // 5. Persist the slip_url on the PayrollItem
-        $slipUrl = Storage::disk('public')->url($relativePath);
-        $item->update(['slip_url' => $slipUrl]);
+        // 5. Persist the relative path on the PayrollItem (not a public URL)
+        $item->update(['slip_url' => $relativePath]);
     }
 }
