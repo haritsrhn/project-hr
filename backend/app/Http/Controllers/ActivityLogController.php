@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Employment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Activitylog\Models\Activity;
@@ -34,6 +35,16 @@ class ActivityLogController extends Controller
 
         $query = Activity::query()->latest();
 
+        // entity_admin can only see logs caused by users in their entity
+        if ($user->hasRole('entity_admin') && !$user->hasRole('super_admin') && !$user->hasRole('holding_admin')) {
+            $activeEntityId = $request->attributes->get('active_entity_id');
+            if ($activeEntityId) {
+                $entityUserIds = Employment::where('entity_id', $activeEntityId)->pluck('user_id');
+                $query->where('causer_type', 'App\\Models\\User')
+                      ->whereIn('causer_id', $entityUserIds);
+            }
+        }
+
         // Filter by causer (user who caused the activity)
         if ($causerId = $request->query('causer_id')) {
             $query->where('causer_type', 'App\\Models\\User')
@@ -65,7 +76,6 @@ class ActivityLogController extends Controller
                     'causer_type'      => $log->causer_type,
                     'causer_id'        => $log->causer_id,
                     'properties'       => $log->properties,
-                    'attribute_changes'=> $log->changes,
                     'created_at'       => $log->created_at?->toIso8601String(),
                 ];
             })->values(),

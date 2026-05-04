@@ -52,7 +52,11 @@ class LeaveController extends Controller
      */
     public function approve(Request $request, string $leaveRequest): JsonResponse
     {
-        $leave = LeaveRequest::find($leaveRequest);
+        $activeEntityId = $request->attributes->get('active_entity_id');
+        $leave = LeaveRequest::when(
+            $activeEntityId,
+            fn ($q) => $q->whereHas('employment', fn ($q2) => $q2->where('entity_id', $activeEntityId))
+        )->find($leaveRequest);
 
         if ($leave) {
             activity('leave')

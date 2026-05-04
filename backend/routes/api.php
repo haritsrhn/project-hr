@@ -168,7 +168,7 @@ Route::middleware(['auth:sanctum', 'entity.scope'])
     });
 
 // ── AUDIT LOGS ────────────────────────────────────────────────────────────
-Route::middleware('auth:sanctum')
+Route::middleware(['auth:sanctum', 'entity.scope'])
     ->get('/audit-logs', [ActivityLogController::class, 'index']);
 
 // ── LOCATIONS (QR & Geofence config) ─────────────────────────────────────
