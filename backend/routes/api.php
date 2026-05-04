@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\LeaveController;
@@ -177,6 +178,23 @@ Route::middleware(['auth:sanctum', 'entity.scope'])
 // ── AUDIT LOGS ────────────────────────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'entity.scope'])
     ->get('/audit-logs', [ActivityLogController::class, 'index']);
+
+// ── DOCUMENTS ────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'entity.scope'])
+    ->prefix('employees/{employment}/documents')
+    ->group(function () {
+        Route::get('/', [DocumentController::class, 'index'])
+            ->middleware('permission:employees.view');
+
+        Route::post('/', [DocumentController::class, 'store'])
+            ->middleware('permission:employees.update');
+
+        Route::get('/{document}/download', [DocumentController::class, 'download'])
+            ->middleware('permission:employees.view');
+
+        Route::delete('/{document}', [DocumentController::class, 'destroy'])
+            ->middleware('permission:employees.update');
+    });
 
 // ── LOCATIONS (QR & Geofence config) ─────────────────────────────────────
 Route::middleware(['auth:sanctum', 'entity.scope'])
