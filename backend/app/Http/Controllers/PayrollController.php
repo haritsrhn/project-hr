@@ -11,6 +11,7 @@ use App\Models\PayrollRun;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -272,6 +273,107 @@ class PayrollController extends Controller
         }
 
         return $this->success(new PayrollItemResource($payrollItem));
+    }
+
+    /**
+     * Export payroll run to CSV (Excel-compatible) for a PROCESSED or PAID run.
+     */
+    public function export(Request $request, string $run): StreamedResponse|JsonResponse
+    {
+        $entityId = $request->attributes->get('active_entity_id');
+
+        $runQuery = PayrollRun::with(['items.employment.user', 'entity'])->where('id', $run);
+        if ($entityId) {
+            $runQuery->where('entity_id', $entityId);
+        }
+        $payrollRun = $runQuery->first();
+
+        if (! $payrollRun) {
+            return $this->error('Payroll run tidak ditemukan.', 404);
+        }
+
+        if (! in_array($payrollRun->status, ['PROCESSED', 'PAID'])) {
+            return $this->error('Hanya run berstatus PROCESSED atau PAID yang bisa diekspor.', 422);
+        }
+
+        $filename = 'payroll-' . Str::slug($payrollRun->entity->name ?? 'export')
+                  . '-' . $payrollRun->period_month . '-' . $payrollRun->period_year . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        return response()->stream(function () use ($payrollRun) {
+            $handle = fopen('php://output', 'w');
+            fputs($handle, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel opens correctly
+            fputcsv($handle, [
+                'No', 'NIK', 'Nama', 'Jabatan', 'Departemen',
+                'Gaji Pokok', 'Tunjangan', 'Gross',
+                'BPJS Kes', 'BPJS JHT', 'BPJS JP', 'Total BPJS',
+                'PPh 21', 'Total Potongan', 'Net Salary',
+            ]);
+
+            $totalGajiPokok   = 0;
+            $totalTunjangan   = 0;
+            $totalGross       = 0;
+            $totalBpjsKes     = 0;
+            $totalBpjsJht     = 0;
+            $totalBpjsJp      = 0;
+            $totalBpjs        = 0;
+            $totalPph21       = 0;
+            $totalPotongan    = 0;
+            $totalNet         = 0;
+
+            foreach ($payrollRun->items as $i => $item) {
+                $bpjsKes    = $item->bpjs_kes_employee ?? 0;
+                $bpjsJht    = $item->bpjs_jht_employee ?? 0;
+                $bpjsJp     = $item->bpjs_jp_employee ?? 0;
+                $bpjsTotal  = $bpjsKes + $bpjsJht + $bpjsJp;
+                $pph21      = $item->pph21_amount ?? 0;
+                $totalDeductions = $bpjsTotal + $pph21;
+                $allowances = collect($item->allowances ?? [])->sum('amount');
+
+                fputcsv($handle, [
+                    $i + 1,
+                    $item->employment->nik ?? '',
+                    $item->employment->user->name ?? '',
+                    $item->employment->position ?? '',
+                    $item->employment->department ?? '',
+                    $item->salary_basic ?? 0,
+                    $allowances,
+                    $item->gross_salary ?? 0,
+                    $bpjsKes,
+                    $bpjsJht,
+                    $bpjsJp,
+                    $bpjsTotal,
+                    $pph21,
+                    $totalDeductions,
+                    $item->net_salary ?? 0,
+                ]);
+
+                $totalGajiPokok += $item->salary_basic ?? 0;
+                $totalTunjangan += $allowances;
+                $totalGross     += $item->gross_salary ?? 0;
+                $totalBpjsKes   += $bpjsKes;
+                $totalBpjsJht   += $bpjsJht;
+                $totalBpjsJp    += $bpjsJp;
+                $totalBpjs      += $bpjsTotal;
+                $totalPph21     += $pph21;
+                $totalPotongan  += $totalDeductions;
+                $totalNet       += $item->net_salary ?? 0;
+            }
+
+            // Footer row: totals
+            fputcsv($handle, [
+                'TOTAL', '', '', '', '',
+                $totalGajiPokok, $totalTunjangan, $totalGross,
+                $totalBpjsKes, $totalBpjsJht, $totalBpjsJp, $totalBpjs,
+                $totalPph21, $totalPotongan, $totalNet,
+            ]);
+
+            fclose($handle);
+        }, 200, $headers);
     }
 
     /**

@@ -4,13 +4,14 @@ import { use, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ArrowLeft, Settings, Lock, Loader2 } from 'lucide-react'
+import { ArrowLeft, Settings, Lock, Loader2, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { PayrollStatusBadge } from '@/components/modules/payroll/PayrollStatusBadge'
 import { usePayrollRun, usePayrollItems, useProcessRun, useLockRun } from '@/lib/api/payroll'
 import { formatRupiah, formatMonth } from '@/lib/utils/format'
+import apiClient from '@/lib/api/client'
 import type { PayrollItem } from '@/types'
 
 export default function PayrollRunDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,7 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
   const router = useRouter()
   const [polling, setPolling] = useState(false)
   const [showLockConfirm, setShowLockConfirm] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const { data: runData, isPending: loadingRun } = usePayrollRun(id, polling ? 3000 : false)
   const run = runData?.data
@@ -60,6 +62,30 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Gagal mengunci payroll run.'
       toast.error(msg)
+    }
+  }
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const response = await apiClient.get(`/payroll/runs/${id}/export`, {
+        responseType: 'blob',
+      })
+      const disposition = (response.headers['content-disposition'] as string) ?? ''
+      const match = disposition.match(/filename="([^"]+)"/)
+      const filename = match?.[1] ?? `payroll-${id}.csv`
+      const url = URL.createObjectURL(new Blob([response.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Gagal mengekspor laporan.')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -117,6 +143,14 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
             <Button variant="outline" onClick={() => setShowLockConfirm(true)}>
               <Lock aria-hidden="true" className="h-4 w-4 mr-2" />
               Finalisasi & Kunci
+            </Button>
+          )}
+          {(run.status === 'PROCESSED' || run.status === 'PAID') && (
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+              {exporting
+                ? <Loader2 aria-hidden="true" className="h-4 w-4 mr-2 animate-spin" />
+                : <Download aria-hidden="true" className="h-4 w-4 mr-2" />}
+              Export Excel
             </Button>
           )}
         </div>
