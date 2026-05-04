@@ -4,7 +4,7 @@ Internal Human Resource Information System untuk Tridaya Sejahtera Group (Holdin
 
 ## Status
 
-**Walking Skeleton selesai** — Auth, Entity/Employee CRUD, GPS Attendance, dan Payroll end-to-end sudah berjalan di `main`.
+**Phase 1 MVP selesai** — Seluruh milestone Phase 1 sudah berjalan di `main`.
 
 | Milestone | Status |
 |---|---|
@@ -17,6 +17,10 @@ Internal Human Resource Information System untuk Tridaya Sejahtera Group (Holdin
 | #7 Absensi: GPS Attendance Frontend | ✅ Done |
 | #8 Payroll: Calculator, Jobs & PDF Slip | ✅ Done |
 | #9 Payroll: Runs, Kalkulasi & Slip Frontend | ✅ Done |
+| #10 M1: Manajemen Dokumen Karyawan (API + UI) | ✅ Done |
+| #11 M2: Rekap Kehadiran Bulanan (BE + FE) | ✅ Done |
+| #12 M3: Export Laporan Payroll (CSV) | ✅ Done |
+| #13 M4: Audit Log via spatie/laravel-activitylog | ✅ Done |
 
 ## Stack
 

@@ -8,7 +8,7 @@
 
 | Fase | Nama | Estimasi | Status |
 |---|---|---|---|
-| Phase 1 | MVP — Core HR | Bulan 1–3 | 🔄 In Progress |
+| Phase 1 | MVP — Core HR | Bulan 1–3 | ✅ Done |
 | Phase 2 | Expansion | Bulan 4–6 | Belum dimulai |
 | Phase 3 | SaaS Ready | Bulan 7+ | Belum dimulai |
 
@@ -18,7 +18,7 @@
 
 ### M1: Master Data Karyawan
 - [x] CRUD profil karyawan (data personal, kontak darurat)
-- [ ] Manajemen dokumen (upload KTP, NPWP, Ijazah, SK)
+- [x] Manajemen dokumen (upload KTP, NPWP, Ijazah, SK) — PR #22 & #23
 - [x] Multi-employment per karyawan (dual role lintas entitas)
 - [x] Status jabatan & riwayat perubahan posisi
 - [x] Import bulk karyawan via CSV/Excel
@@ -30,7 +30,7 @@
 - [x] Pengajuan cuti self-service oleh karyawan
 - [x] Workflow approval cuti (Karyawan → Manager → HRD)
 - [x] Manajemen saldo cuti tahunan per karyawan
-- [ ] Rekap kehadiran bulanan (laporan HRD)
+- [x] Rekap kehadiran bulanan (laporan HRD) — PR #20
 
 ### M3: Payroll Otomatis
 - [x] Konfigurasi komponen gaji per karyawan
@@ -39,13 +39,13 @@
 - [x] Kalkulasi BPJS Ketenagakerjaan (JHT, JKK, JKM, JP)
 - [x] Proses payroll per entitas per bulan (async via Redis queue)
 - [x] Generate slip gaji PDF per karyawan
-- [ ] Export laporan payroll (Excel/PDF) untuk pelaporan pajak
+- [x] Export laporan payroll (CSV/Excel) untuk pelaporan pajak — PR #19
 
 ### M4: RBAC & Sistem Akses
 - [x] 5 level role: super_admin, holding_admin, entity_admin, manager, employee
 - [x] Permission matrix per role
 - [x] Isolasi data antar entitas (entity_admin hanya lihat entitas sendiri)
-- [ ] Audit log setiap aksi sensitif (login, edit payroll, approve cuti)
+- [x] Audit log setiap aksi sensitif (login, edit payroll, approve cuti) — PR #21
 
 ### Infrastructure MVP
 - [ ] Setup environment AWS/GCP (staging + production)
@@ -82,5 +82,5 @@
 |---|---|---|
 | P3 | Pilihan final AWS vs GCP | Sebelum setup infrastructure |
 | P4 | Skema penggajian Tridaya (komponen gaji aktual) | Sebelum payroll production |
-| P5 | Export laporan payroll format final (Excel/PDF) | Phase 1 sisa |
-| P6 | Audit log — spatie/laravel-activitylog sudah di-install, perlu di-wire ke controller | Phase 1 sisa |
+| ~~P5~~ | ~~Export laporan payroll format final (Excel/PDF)~~ | ✅ Resolved — CSV streaming (PR #19) |
+| ~~P6~~ | ~~Audit log — spatie/laravel-activitylog perlu di-wire~~ | ✅ Resolved — fully wired (PR #21) |
