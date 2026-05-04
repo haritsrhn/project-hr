@@ -34,7 +34,9 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    response.data = camelizeKeys(response.data)
+    if (!(response.data instanceof Blob)) {
+      response.data = camelizeKeys(response.data)
+    }
     return response
   },
   (error) => {

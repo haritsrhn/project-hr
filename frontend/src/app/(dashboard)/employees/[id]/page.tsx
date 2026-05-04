@@ -1,10 +1,11 @@
 'use client'
 
 import { use, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { ArrowLeft, Pencil, X, Save, Loader2 } from 'lucide-react'
+import { ArrowLeft, Pencil, X, Save, Loader2, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -84,6 +85,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         </Button>
         <h1 className="text-2xl font-bold text-gray-900">{employee.user?.name}</h1>
         {primary?.status && <Badge>{primary.status}</Badge>}
+        <div className="ml-auto">
+          <Link href={`/employees/${id}/documents`}>
+            <Button variant="outline" size="sm">
+              <FolderOpen className="h-4 w-4 mr-2" aria-hidden="true" />
+              Dokumen
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
