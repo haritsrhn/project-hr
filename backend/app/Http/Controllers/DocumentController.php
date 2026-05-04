@@ -81,8 +81,13 @@ class DocumentController extends Controller
     public function download(Request $request, string $employmentId, string $documentId): StreamedResponse|JsonResponse
     {
         $employment = Employment::findOrFail($employmentId);
-        $doc        = Document::where('employment_id', $employmentId)->findOrFail($documentId);
 
+        $activeEntityId = $request->attributes->get('active_entity_id');
+        if ($activeEntityId && $employment->entity_id !== $activeEntityId) {
+            return $this->error('Akses ditolak.', 403);
+        }
+
+        $doc     = Document::where('employment_id', $employmentId)->findOrFail($documentId);
         $user    = $request->user();
         $isOwner = $employment->user_id === $user->id;
         $isAdmin = $user->hasRole('super_admin') || $user->hasRole('holding_admin')
