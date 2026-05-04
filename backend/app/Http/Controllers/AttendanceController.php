@@ -9,6 +9,7 @@ use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Employment;
+use App\Models\LeaveRequest;
 use App\Models\Location;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -336,6 +337,91 @@ class AttendanceController extends Controller
         return $this->success(
             AttendanceResource::collection($attendances)->response()->getData(true)
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Monthly Report
+    // -------------------------------------------------------------------------
+
+    /**
+     * Return a per-employee attendance summary for a given month/year.
+     * Accessible only to users with the attendance.view_all permission.
+     *
+     * Query params: ?month=5&year=2026
+     */
+    public function monthlyReport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year'  => 'required|integer|min:2020|max:2099',
+        ]);
+
+        $month    = (int) $request->month;
+        $year     = (int) $request->year;
+        $entityId = $request->attributes->get('active_entity_id');
+
+        // Hitung total hari kerja di bulan tersebut (Senin-Jumat)
+        $daysInMonth = Carbon::createFromDate($year, $month)->daysInMonth;
+        $workingDays = 0;
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $dow = Carbon::createFromDate($year, $month, $d)->dayOfWeek;
+            if ($dow >= 1 && $dow <= 5) {
+                $workingDays++;
+            }
+        }
+
+        // Query semua employments aktif di entitas
+        $employmentsQuery = Employment::with('user')
+            ->where('status', 'active');
+        if ($entityId) {
+            $employmentsQuery->where('entity_id', $entityId);
+        }
+        $employments = $employmentsQuery->get();
+
+        $employmentIds = $employments->pluck('id');
+        $startOfMonth  = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth    = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        // Batch-fetch all attendances and leaves for the month — avoids N+1
+        $attendancesByEmp = Attendance::whereIn('employment_id', $employmentIds)
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->get()
+            ->groupBy('employment_id');
+
+        $leavesByEmp = LeaveRequest::whereIn('employment_id', $employmentIds)
+            ->where('status', 'APPROVED')
+            ->where('start_date', '<=', $endOfMonth)
+            ->where('end_date', '>=', $startOfMonth)
+            ->get()
+            ->groupBy('employment_id');
+
+        $report = $employments->map(function ($emp) use ($attendancesByEmp, $leavesByEmp) {
+            $attendances = $attendancesByEmp[$emp->id] ?? collect();
+            $leaves      = $leavesByEmp[$emp->id] ?? collect();
+
+            $present = $attendances->whereIn('status', ['PRESENT', 'LATE'])->count();
+            $late    = $attendances->where('status', 'LATE')->count();
+            $absent  = $attendances->where('status', 'ABSENT')->count();
+
+            return [
+                'employment_id' => $emp->id,
+                'name'          => $emp->user->name,
+                'nik'           => $emp->nik,
+                'position'      => $emp->position,
+                'present'       => $present,
+                'late'          => $late,
+                'absent'        => $absent,
+                'leave'         => $leaves->count(),
+            ];
+        });
+
+        return $this->success([
+            'month'        => $month,
+            'year'         => $year,
+            'working_days' => $workingDays,
+            'employees'    => $report,
+        ]);
     }
 
     // -------------------------------------------------------------------------
