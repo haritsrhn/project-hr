@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class PayrollRun extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $primaryKey = 'id';
     public $incrementing = false;
@@ -41,6 +43,15 @@ class PayrollRun extends Model
             'processed_at'   => 'datetime',
             'locked_at'      => 'datetime',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('payroll')
+            ->logOnly(['status', 'total_gross', 'total_net', 'total_employees', 'processed_by', 'processed_at', 'locked_by', 'locked_at'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 
     protected static function boot(): void

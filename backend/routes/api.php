@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\EmployeeController;
@@ -172,6 +173,10 @@ Route::middleware(['auth:sanctum', 'entity.scope'])
         Route::get('/items/{item}/slip-download', [PayrollController::class, 'downloadSlip'])
             ->middleware('permission:payroll.view_own_slip');
     });
+
+// ── AUDIT LOGS ────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'entity.scope'])
+    ->get('/audit-logs', [ActivityLogController::class, 'index']);
 
 // ── LOCATIONS (QR & Geofence config) ─────────────────────────────────────
 Route::middleware(['auth:sanctum', 'entity.scope'])
