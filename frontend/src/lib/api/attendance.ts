@@ -12,10 +12,6 @@ export const attendanceApi = {
     apiClient.get('/attendance/monthly-report', { params: { month, year } }),
 }
 
-export function getMonthlyReport(month: number, year: number) {
-  return apiClient.get('/attendance/monthly-report', { params: { month, year } })
-}
-
 export const useMonthlyReport = (month: number, year: number, enabled: boolean) =>
   useQuery({
     queryKey: ['attendance-monthly-report', month, year],

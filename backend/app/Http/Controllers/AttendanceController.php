@@ -378,23 +378,31 @@ class AttendanceController extends Controller
         }
         $employments = $employmentsQuery->get();
 
-        $report = $employments->map(function ($emp) use ($month, $year) {
-            $attendances = Attendance::where('employment_id', $emp->id)
-                ->whereMonth('date', $month)
-                ->whereYear('date', $year)
-                ->get();
+        $employmentIds = $employments->pluck('id');
+        $startOfMonth  = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth    = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        // Batch-fetch all attendances and leaves for the month — avoids N+1
+        $attendancesByEmp = Attendance::whereIn('employment_id', $employmentIds)
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->get()
+            ->groupBy('employment_id');
+
+        $leavesByEmp = LeaveRequest::whereIn('employment_id', $employmentIds)
+            ->where('status', 'APPROVED')
+            ->where('start_date', '<=', $endOfMonth)
+            ->where('end_date', '>=', $startOfMonth)
+            ->get()
+            ->groupBy('employment_id');
+
+        $report = $employments->map(function ($emp) use ($attendancesByEmp, $leavesByEmp) {
+            $attendances = $attendancesByEmp[$emp->id] ?? collect();
+            $leaves      = $leavesByEmp[$emp->id] ?? collect();
 
             $present = $attendances->whereIn('status', ['PRESENT', 'LATE'])->count();
             $late    = $attendances->where('status', 'LATE')->count();
             $absent  = $attendances->where('status', 'ABSENT')->count();
-
-            // Hitung cuti yang disetujui di bulan ini
-            $leaveCount = LeaveRequest::where('employment_id', $emp->id)
-                ->where('status', 'APPROVED')
-                ->where(function ($q) use ($month, $year) {
-                    $q->whereMonth('start_date', $month)->whereYear('start_date', $year)
-                      ->orWhereMonth('end_date', $month)->whereYear('end_date', $year);
-                })->count();
 
             return [
                 'employment_id' => $emp->id,
@@ -404,7 +412,7 @@ class AttendanceController extends Controller
                 'present'       => $present,
                 'late'          => $late,
                 'absent'        => $absent,
-                'leave'         => $leaveCount,
+                'leave'         => $leaves->count(),
             ];
         });
 
