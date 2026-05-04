@@ -71,10 +71,13 @@ export default function PayrollRunDetailPage({ params }: { params: Promise<{ id:
       const response = await apiClient.get(`/payroll/runs/${id}/export`, {
         responseType: 'blob',
       })
+      const disposition = (response.headers['content-disposition'] as string) ?? ''
+      const match = disposition.match(/filename="([^"]+)"/)
+      const filename = match?.[1] ?? `payroll-${id}.csv`
       const url = URL.createObjectURL(new Blob([response.data]))
       const a = document.createElement('a')
       a.href = url
-      a.download = `payroll-${id}.csv`
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
