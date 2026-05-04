@@ -507,12 +507,14 @@ export default function EmployeeDocumentsPage({
         />
       )}
 
-      <DeleteConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
-        document={deleteTarget}
-        employmentId={employmentId ?? ''}
-      />
+      {employmentId && (
+        <DeleteConfirmDialog
+          open={!!deleteTarget}
+          onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
+          document={deleteTarget}
+          employmentId={employmentId}
+        />
+      )}
     </div>
   )
 }

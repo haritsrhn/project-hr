@@ -15,7 +15,7 @@ export interface EmployeeDocument {
   type: DocumentType
   label: string | null
   expiresAt: string | null
-  uploadedBy: { id: string; name: string }
+  uploadedBy: { id: string; name: string } | null
   createdAt: string
 }
 
@@ -48,11 +48,16 @@ export const downloadDocument = async (
     `/employees/${employmentId}/documents/${documentId}/download`,
     { responseType: 'blob' }
   )
+  const disposition = (response.headers['content-disposition'] as string) ?? ''
+  const match = disposition.match(/filename[^;=\n]*=["']?([^"';\n]+)/)
+  const filename = match?.[1]?.trim() ?? label
   const url = URL.createObjectURL(new Blob([response.data]))
   const a = document.createElement('a')
   a.href = url
-  a.download = label
+  a.download = filename
+  document.body.appendChild(a)
   a.click()
+  document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
 
